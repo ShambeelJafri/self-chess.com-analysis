@@ -1,0 +1,140 @@
+---
+title: "An analysis of my own chess playing habits"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lubridate)
+library(tidyverse)
+library(hrbrthemes)
+library(readxl)
+library(DT)
+library(pander)
+library(ggpubr)
+
+
+result <- read_xlsx("chess_games_2020-08-21_to_2022-05.29.xlsx")
+```
+
+This project focuses on basic analysis (playing habits, win-percentages, etc) of my chess games from 21/08/2020 to 29/05/2022. In this period I have played a total of 2539 games on Chess.com, which is where I have gotten my games data-set from using the R package "bigchess". 
+
+## Basic Stats
+
+
+```{r basic stats, fig.dim = c(7, 5)}
+
+#games as white --------
+games_as_white <- result %>% filter(White == "Shamborambo") %>%
+  count() %>% as.integer()
+
+#games as black ---------
+games_as_black <- result %>% filter(Black == "Shamborambo") %>%
+  count() %>% as.integer()
+
+#wins as white ---------
+wins_as_white <- result %>%
+  filter(White == "Shamborambo" & Result == "1-0") %>% 
+  count() %>% as.integer()
+
+#draws as white ---------
+draws_as_white <- result %>%
+  filter(White == "Shamborambo" & Result == "1/2-1/2") %>% 
+  count() %>% as.integer()
+
+#wins as black ---------
+wins_as_black <- result %>%
+  filter(Black == "Shamborambo" & Result == "0-1") %>% 
+  count() %>% as.integer()
+
+#wins as black ---------
+draws_as_black <- result %>%
+  filter(Black == "Shamborambo" & Result == "1/2-1/2") %>% 
+  count() %>% as.integer()
+
+#win/draw rates as white ---------
+win_rate_as_white <- round((wins_as_white/games_as_white)*100, 2)
+draw_rate_as_white <- round((draws_as_white/games_as_white)*100, 2)
+
+#win/draw rates as black ---------
+win_rate_as_black <- round((wins_as_black/games_as_black)*100, 2)
+draw_rate_as_black <- round((draws_as_black/games_as_white)*100, 2)
+
+#create basic_stats table 
+basic_stats <- data.frame(Colour = c("White", "Black"),
+                          Games = c(games_as_white, games_as_black),
+                          Wins = c(wins_as_white, wins_as_black),
+                          "Win Rate" = c(win_rate_as_white, win_rate_as_black),
+                          Draws = c(draws_as_white, draws_as_black), 
+                          "Draw Rate" = c(draw_rate_as_white, draw_rate_as_black))
+pander(basic_stats)
+
+#for notmal win rate bar graph
+# basic_stats %>% ggplot(aes(x = Colour, y = Win.Rate, fill = Colour)) + 
+#   geom_bar(position="dodge", stat="identity", width = 0.5) + coord_flip() + theme_minimal() +
+#   scale_fill_brewer(palette = "Set2", guide = "none") +
+#   xlab("") + ylab("") + ggtitle("Win Rates") + 
+#   theme(plot.title = element_text(hjust = 0.5))
+
+#rework basic stats for grouped bar graph
+t <- data.frame(colour = c("White", "Black", "White", "Black"),
+                result = c("Win", "Win", "Draw", "Draw"),
+                rate = c(win_rate_as_white, win_rate_as_black, draw_rate_as_white, draw_rate_as_black))
+t %>% ggplot(aes(x = rate, y = colour, fill = result)) + 
+  geom_bar(position="dodge", stat="identity", width = 0.5) + theme_minimal() +
+  xlab("") + ylab("") + ggtitle("Win and Draw Rates") + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+It's easy to see I have a higher win-rate as white than do I as black but the draw-rate difference between the two is almost negligible. As white, I have drawn only 5.03% of games while as black, I've drawn 5.11% of games. 
+
+### Playing Habits
+
+As somebody who plays *almost* daily, it's interesting for me to observe my playing habits. 
+
+```{r games played per day, fig.dim = c(10, 5)}
+#time series visualization for games played per day
+
+#games per day
+games_per_day <- result %>% group_by(Date) %>% count()
+games_per_day$Date <- format(as.Date(games_per_day$Date, '%Y.%m.%d'), "%Y/%m/%d")
+games_per_day$Date <- as.Date(games_per_day$Date)
+
+games_per_day %>%
+  ggplot(aes(x=Date, y=n)) +
+  geom_line(group = 1, color= "steelblue") +
+  scale_x_date(date_labels = "%m-%Y", date_breaks = "2 month") +
+  theme_pubclean() + 
+  theme(axis.text.x=element_text(angle=60, hjust=1),
+        plot.title = element_text(hjust = 0.5)) +
+  xlab("") + ylab("")
+
+```
+
+### Do I play more on some days than others? 
+
+I was curious to see if I had played more games on some days than I had on others but most importantly, if there was a noticeable difference between my most and least preferred day. Prior to this, I had assumed that I had played the most on the weekend, Saturdays and Sundays, but the data tells me that that assumption was wrong. Historically, I've played most of my games on Tuesdays (441 games) and the least (!) on Saturdays (214). I've played 227 more games on a work day than I have on Saturdays - I'll leave that up to interpretation. 
+
+```{r}
+#what days do I play the most on? --------
+
+#change Date col to y/m/d format
+result$Date <- format(as.Date(result$Date, '%Y.%m.%d'), "%Y/%m/%d")
+
+#games per day
+games_per_day$Day <- wday(games_per_day$Date, label=TRUE, abbr = FALSE)
+
+days_and_games_count <- games_per_day %>%
+  group_by(Day) %>%
+  summarise(n = sum(n)) %>%
+  arrange(desc(n))
+
+#how many games I've played on each day
+# datatable(games_per_day %>% group_by(Day) %>% summarise(n = sum(n)))
+
+pander(days_and_games_count)
+
+```
