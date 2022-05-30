@@ -23,7 +23,7 @@ This project focuses on basic analysis (playing habits, win-percentages, etc) of
 
 ## Basic Stats
 
-
+<center>
 ```{r basic stats, fig.dim = c(7, 5)}
 
 #games as white --------
@@ -71,6 +71,10 @@ basic_stats <- data.frame(Colour = c("White", "Black"),
                           "Draw Rate" = c(draw_rate_as_white, draw_rate_as_black))
 pander(basic_stats)
 
+```
+</center>
+
+```{r, fig.align='center'}
 #for notmal win rate bar graph
 # basic_stats %>% ggplot(aes(x = Colour, y = Win.Rate, fill = Colour)) + 
 #   geom_bar(position="dodge", stat="identity", width = 0.5) + coord_flip() + theme_minimal() +
@@ -116,9 +120,11 @@ games_per_day %>%
 
 ### Do I play more on some days than others? 
 
-I was curious to see if I had played more games on some days than I had on others but most importantly, if there was a noticeable difference between my most and least preferred day. Prior to this, I had assumed that I had played the most on the weekend, Saturdays and Sundays, but the data tells me that that assumption was wrong. Historically, I've played most of my games on Tuesdays (441 games) and the least (!) on Saturdays (214). I've played 227 more games on a work day than I have on Saturdays - I'll leave that up to interpretation. 
+I was curious to see if I had played more games on some days than I had on others but most importantly, if there was a noticeable difference between my most and least preferred day. 
 
-```{r}
+<center>
+
+```{r, }
 #what days do I play the most on? --------
 
 #change Date col to y/m/d format
@@ -130,11 +136,25 @@ games_per_day$Day <- wday(games_per_day$Date, label=TRUE, abbr = FALSE)
 days_and_games_count <- games_per_day %>%
   group_by(Day) %>%
   summarise(n = sum(n)) %>%
-  arrange(desc(n))
-
-#how many games I've played on each day
-# datatable(games_per_day %>% group_by(Day) %>% summarise(n = sum(n)))
+  arrange(desc(n)) %>% 
+  rename(Games = n)
 
 pander(days_and_games_count)
+```
+
+</center>
+
+
+Prior to this, I had assumed that I had played the most on the weekend, Saturdays and Sundays, but the data tells me that that assumption was wrong. Historically, I've played most of my games on Tuesdays (441 games) and the least (!) on Saturdays (214). I've played 227 more games on a work day than I have on Saturdays ... I'll leave that up to interpretation.
+
+```{r, fig.align='center', fig.dim=c(7,4)}
+#visualization 
+days_and_games_count %>% ggplot(aes(x = Day, y = Games, fill = Day)) +
+  geom_col() + 
+  scale_fill_brewer(palette = "Accent", guide = "none") +
+  theme_minimal() +
+  xlab("") + ylab("")
 
 ```
+
+
