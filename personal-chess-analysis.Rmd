@@ -190,9 +190,12 @@ days_and_games_count %>% ggplot(aes(x = Day, y = Games, fill = Day)) +
 
 ```
 
-### Win-Percentages according to days
+### Do I win more on some days as compared to others?
 
-```{r}
+Another question on my mind when starting this project was to see if I tended to win/lose more on certain days and to try and link performances to my activities for that day. On Saturdays, I play football in the morning and walk back almost 2 hours home post-football. Does that have an impact on my chess games when I *do* play later on? Of course, this isn't a foolproof way to understand the relation but it does provide a simple launching pad for further thought.
+
+<center>
+```{r, echo=FALSE, include=FALSE}
 
 #wins
 wins <- result %>% 
@@ -246,5 +249,34 @@ draws_days <- draws %>%
 
 outcomes_days <- left_join(wins_days, losses_days) 
 outcomes_days <- left_join(outcomes_days, draws_days)
+```
+
+```{r}
+chances_days <- data.frame(Day = outcomes_days$Day,
+                                      Win.Chances = c(50.57, 52.74, 48.02, 48.52, 48.34, 46.88, 48.6),
+                                      Loss.Chances = c(44.9,42.09,47.55,44.33,47.31,48.44,46.26),
+                                      Draw.Chances = c(4.54, 5.22,4.43,7.14,4.35,4.69,5.14))
+
+pander(chances_days)
+```
+</center>
+
+Perhaps I'm not as tired on Saturday post-football as I am on Sunday when my body is sore from the day before? As evident, I win the most on Mondays and the least on Sundays. On the other side of that discussion, I'm least likely to lose on a Monday and most likely to lose on a Sunday, perhapys lending to my tired theory? That's now a question for another project.  
+
+
+```{r, fig.align='center', fig.dim=c(7,5)}
+
+#visualization 
+chances_days %>% ggplot() +
+  geom_line(aes(x = Day, y = Win.Chances), group = 1, color = "steelblue") + 
+  geom_point(aes(x = Day, y = Win.Chances), color = "steelblue", size = 2.5) + 
+  geom_line(aes(x = Day, y = Loss.Chances), group = 1, color = "red") +
+  geom_point(aes(x = Day, y = Loss.Chances), color = "red", size = 2.5) + 
+  theme_minimal() +
+  ylim(c(40,60)) +
+  ylab("") + xlab("") + ggtitle("Chances of winning or losing on any given day") +
+  theme(plot.title = element_text(hjust = 0.5))
 
 ```
+In fact, I'm more likely to lose on a Sunday than I am to win - should I stop playing on Sundays? 
+
