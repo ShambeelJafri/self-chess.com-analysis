@@ -34,41 +34,72 @@ games_as_white <- result %>% filter(White == "Shamborambo") %>%
 games_as_black <- result %>% filter(Black == "Shamborambo") %>%
   count() %>% as.integer()
 
-#wins as white ---------
+#outcomes as white ---------
 wins_as_white <- result %>%
   filter(White == "Shamborambo" & Result == "1-0") %>% 
   count() %>% as.integer()
 
-#draws as white ---------
+losses_as_white <- result %>%
+  filter(White == "Shamborambo" & Result == "0-1") %>% 
+  count() %>% as.integer()
+
 draws_as_white <- result %>%
   filter(White == "Shamborambo" & Result == "1/2-1/2") %>% 
   count() %>% as.integer()
 
-#wins as black ---------
+#outcomes as black ---------
 wins_as_black <- result %>%
   filter(Black == "Shamborambo" & Result == "0-1") %>% 
   count() %>% as.integer()
 
-#wins as black ---------
+losses_as_black <- result %>%
+  filter(Black == "Shamborambo" & Result == "1-0") %>% 
+  count() %>% as.integer()
+
 draws_as_black <- result %>%
   filter(Black == "Shamborambo" & Result == "1/2-1/2") %>% 
   count() %>% as.integer()
 
-#win/draw rates as white ---------
+#win/draw/loss rates as white ---------
 win_rate_as_white <- round((wins_as_white/games_as_white)*100, 2)
 draw_rate_as_white <- round((draws_as_white/games_as_white)*100, 2)
+loss_rate_as_white <- round((losses_as_white/games_as_white)*100,2)
 
-#win/draw rates as black ---------
+#win/draw/loss rates as black ---------
 win_rate_as_black <- round((wins_as_black/games_as_black)*100, 2)
-draw_rate_as_black <- round((draws_as_black/games_as_white)*100, 2)
+draw_rate_as_black <- round((draws_as_black/games_as_black)*100, 2)
+loss_rate_as_black <- round((losses_as_black/games_as_black)*100,2)
+
+#totals -------
+wins_total <- result %>% 
+  filter(White == "Shamborambo" & Result == "1-0" | Black == "Shamborambo" & Result == "0-1") %>% 
+  count() %>% as.integer()
+
+win_rate_total <- round((wins_total/2539)*100, 2)
+
+losses_total <- result %>% 
+  filter(White == "Shamborambo" & Result == "0-1" | Black == "Shamborambo" & Result == "1-0") %>% 
+  count() %>% as.integer()
+
+loss_rate_total <- round((losses_total/2539)*100, 2)
+
+draws_total <- result %>% 
+  filter(Result == "1/2-1/2") %>% 
+  count() %>% as.integer()
+
+draw_rate_total <- round((draws_total/2539)*100, 2)
+
+
 
 #create basic_stats table 
-basic_stats <- data.frame(Colour = c("White", "Black"),
-                          Games = c(games_as_white, games_as_black),
-                          Wins = c(wins_as_white, wins_as_black),
-                          "Win Rate" = c(win_rate_as_white, win_rate_as_black),
-                          Draws = c(draws_as_white, draws_as_black), 
-                          "Draw Rate" = c(draw_rate_as_white, draw_rate_as_black))
+basic_stats <- data.frame(Colour = c("White", "Black", "Total"),
+                          Games = c(games_as_white, games_as_black, 2539),
+                          Wins = c(wins_as_white, wins_as_black, wins_total),
+                          "Win Rate" = c(win_rate_as_white, win_rate_as_black, win_rate_total),
+                          Losses = c(losses_as_white, losses_as_black, losses_total),
+                          "Loss Rate" = c(loss_rate_as_white, loss_rate_as_black, loss_rate_total),
+                          Draws = c(draws_as_white, draws_as_black, draws_total), 
+                          "Draw Rate" = c(draw_rate_as_white, draw_rate_as_black, draw_rate_total))
 pander(basic_stats)
 
 ```
@@ -83,17 +114,19 @@ pander(basic_stats)
 #   theme(plot.title = element_text(hjust = 0.5))
 
 #rework basic stats for grouped bar graph
-t <- data.frame(colour = c("White", "Black", "White", "Black"),
-                result = c("Win", "Win", "Draw", "Draw"),
-                rate = c(win_rate_as_white, win_rate_as_black, draw_rate_as_white, draw_rate_as_black))
+t <- data.frame(colour = c("White", "Black", "White", "Black", "White", "Black"),
+                result = c("Win", "Win", "Draw", "Draw", "Loss", "Loss"),
+                rate = c(win_rate_as_white, win_rate_as_black, draw_rate_as_white, draw_rate_as_black, loss_rate_as_white, loss_rate_as_black))
 t %>% ggplot(aes(x = rate, y = colour, fill = result)) + 
   geom_bar(position="dodge", stat="identity", width = 0.5) + theme_minimal() +
-  xlab("") + ylab("") + ggtitle("Win and Draw Rates") + 
-  theme(plot.title = element_text(hjust = 0.5))
+  xlab("") + ylab("") + ggtitle("Outcome Rates") + 
+  theme(plot.title = element_text(hjust = 0.5)) + scale_fill_brewer(palette = "Set2")
 
 ```
 
-It's easy to see I have a higher win-rate as white than do I as black but the draw-rate difference between the two is almost negligible. As white, I have drawn only 5.03% of games while as black, I've drawn 5.11% of games. 
+It's easy to see I have a higher win-rate as white than do I as black but the draw-rate difference between the two is almost negligible. As white, I have drawn only 5.03% of games while as black, I've drawn 5.13% of games. 
+
+I actually tend to lose more as black than I win, which is not great and calls for increased attention to my black openings. 
 
 ### Playing Habits
 
@@ -157,4 +190,61 @@ days_and_games_count %>% ggplot(aes(x = Day, y = Games, fill = Day)) +
 
 ```
 
+### Win-Percentages according to days
 
+```{r}
+
+#wins
+wins <- result %>% 
+  filter(White == "Shamborambo" & Result == "1-0" | Black == "Shamborambo" & Result == "0-1") %>% 
+  select(Date, White, Black, Result) %>% 
+  mutate(Outcome = "win") %>%
+  group_by(Date) %>%
+  count()
+
+wins$Day <- wday(wins$Date, label=TRUE, abbr = FALSE)
+
+wins_days <- wins %>%
+  group_by(Day) %>%
+  summarise(n = sum(n)) %>%
+  arrange(desc(n)) %>% 
+  rename(Wins = n)
+
+#losses
+losses <- result %>% 
+  filter(White == "Shamborambo" & Result == "0-1" | Black == "Shamborambo" & Result == "1-0") %>% 
+  select(Date, White, Black, Result) %>% 
+  mutate(Outcome = "loss") %>%
+  group_by(Date) %>%
+  count()
+
+losses$Day <- wday(losses$Date, label=TRUE, abbr = FALSE)
+
+losses_days <- losses %>%
+  group_by(Day) %>%
+  summarise(n = sum(n)) %>%
+  arrange(desc(n)) %>% 
+  rename(Losses = n) 
+
+
+#draws
+draws <- result %>% 
+  filter(Result == "1/2-1/2") %>% 
+  select(Date, White, Black, Result) %>% 
+  mutate(Outcome = "Draw") %>%
+  group_by(Date) %>%
+  count()
+
+draws$Day <- wday(draws$Date, label=TRUE, abbr = FALSE)
+
+draws_days <- draws %>%
+  group_by(Day) %>%
+  summarise(n = sum(n)) %>%
+  arrange(desc(n)) %>% 
+  rename(Draws = n) 
+
+
+outcomes_days <- left_join(wins_days, losses_days) 
+outcomes_days <- left_join(outcomes_days, draws_days)
+
+```
